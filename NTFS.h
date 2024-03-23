@@ -203,7 +203,7 @@ typedef union FILE_RECORD
 
 	std::wstring GetFileName()
 	{
-		std::vector<std::pair<DWORD, std::wstring>> names;
+		std::vector<std::pair<BYTE, std::wstring>> names;
 		const auto attributes = GetAttributes(ATTRIBUTE_TYPE::FILE_NAME);
 		if (attributes.size() == 0)
 		{
@@ -218,33 +218,17 @@ typedef union FILE_RECORD
 			names.push_back(std::make_pair(attrName->FilenameNamespace, FileName));
 		}
 
-		while (names.size() != 1)
+		BYTE minValue = 0xFF;
+		size_t mini = 0;
+		for (size_t i = 0; i < names.size(); i++)
 		{
-			for (size_t i = 0; i < names.size(); i++)
+			if (names[i].first < minValue)
 			{
-				if (names[i].first == 3)
-				{
-					names.erase(names.begin() + i);
-					break;
-				}
-				if (names[i].first == 2)
-				{
-					names.erase(names.begin() + i);
-					break;
-				}
-				if (names[i].first == 1)
-				{
-					names.erase(names.begin() + i);
-					break;
-				}
-				if (names[i].first == 0)
-				{
-					names.erase(names.begin() + i);
-					break;
-				}
+				minValue = names[i].first;
+				mini = i;
 			}
 		}
-		return names[0].second;
+		return names[mini].second;
 	}
 }FILE_RECORD, * PFILE_RECORD;
 
