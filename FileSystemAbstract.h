@@ -3,13 +3,16 @@
 
 class FileSystem abstract
 {
+protected:
+	PhysicalDrive* physicalDrive;
 private:
+
 public:
-	PhysicalDrive* pshysicalDrive = nullptr;
-	FileSystem(PhysicalDrive* pshysicalDrive, LBA BootSector)
+	FileSystem(PhysicalDrive* pshysicalDrive)
 	{
-		this->pshysicalDrive = pshysicalDrive;
+		this->physicalDrive = pshysicalDrive;
 	}
+	virtual void DumpRootDirectory() {};
 	virtual void DumpDirectory(UINT64 DirectoryStart) {};
 	virtual void ExtractFile(UINT64 FileStart) {};
 	virtual void FileInfo(UINT64 FileStart) {};

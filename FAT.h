@@ -46,22 +46,26 @@ typedef struct ENTRY_INFO_FAT
 }ENTRY_INFO_FAT, * PENTRY_INFO_FAT;
 #pragma pack(pop)
 
-class FAT
+class FAT : public FileSystem
 {
 public:
 	FAT(PhysicalDrive* physicalDrive, UINT64 LBA);
-	void CommandHandler();
 	BOOL IsFAT();
+	void DumpRootDirectory()
+	{
+		DumpDirectory(0);
+	};
+	void DumpDirectory(UINT64 DirectoryStart);
+	void ExtractFile(UINT64 FileStart) {};
+	void FileInfo(UINT64 FileStart) {};
 private:
-	LBA startTableLBA = 0;
-	LBA rootLBA = 0;
+	LBA startTableLBA;
+	LBA rootLBA;
 	BOOL TableSectorIsInit = false;
-	LBA CurrentTableLBA = 0;
+	LBA CurrentTableLBA;
 	FAT_BOOT_SECTOR BootSector;
-	PhysicalDrive* physicalDrive;
 	std::vector<UINT64> GetPartsOfFileByStartingCluster(DWORD TableIndex);
 	UINT64 GetRawAddressByClusterIndex(DWORD ClusterIndex);
 	DWORD GetNextTableIndex(DWORD TableIndex);
-	void DumpDirectory(DWORD dirStart);
-	DWORD CurrentSectorOfFileAllocationTable[BYTES_PER_SECTOR / sizeof(DWORD)] = { 0 }; //to do: size must be BootSector.Header.BytesPerLogicalSector
+	DWORD CurrentSectorOfFileAllocationTable[BYTES_PER_SECTOR / sizeof(DWORD)] = { 0 }; //todo: size must be BootSector.Header.BytesPerLogicalSector
 };

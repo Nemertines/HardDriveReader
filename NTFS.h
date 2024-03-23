@@ -9,7 +9,7 @@
 
 typedef DWORD MFT_NUMBER;
 typedef std::vector<std::pair<CLUSTER, COUNT>> RUN_LIST;
-#define SIZE_OF_FILE_RECORD 0x400
+#define SIZE_OF_FILE_RECORD (BYTES_PER_SECTOR*2)
 #define MAGIC_INDX 0x58444e49
 
 typedef struct NTFS_ATTRIBUTE
@@ -251,24 +251,22 @@ typedef union FILE_RECORD
 class NTFS : public FileSystem
 {
 private:
-	//LBA pointer on Partition Boot Sector(VBR)
-	//https://en.wikipedia.org/wiki/NTFS
 	LBA LBA_Entry;
+	//https://en.wikipedia.org/wiki/NTFS
 	LBA MFT_Pointer;
-	PhysicalDrive* physicalDrive;
-	void PrintDirectoryContent(MFT_NUMBER number);
-public:
-	void DumpDirectory(MFT_NUMBER DirectoryStart)
-	{
-		PrintDirectoryContent(DirectoryStart);
-	}
-	UINT64 MFTNumberToRawAddress(MFT_NUMBER fileNumber);
-	void ParseFile(MFT_NUMBER fileNumber);
-	NTFS_BOOT_SECTOR_INFO bootSectorInfo;
-	NTFS(PhysicalDrive* physicalDrive, LBA entry);
 	FILE_RECORD MFT_FileRecord;
 	void AttributeHandler2(PNTFS_ATTRIBUTE attributeHeader);
-	BOOL ExtractFile(MFT_NUMBER n);
 	void PrintFileInfo(std::unordered_set<MFT_NUMBER>& fileReferences, PNTFS_INDEX index);
+	NTFS_BOOT_SECTOR_INFO bootSectorInfo;
+	UINT64 MFTNumberToRawAddress(MFT_NUMBER fileNumber);
+public:
+	void DumpRootDirectory()
+	{
+		DumpDirectory(MFT_FileRecord.GetParentDirectory());
+	};
+	void DumpDirectory(UINT64 DirectoryStart);
+	void ExtractFile(UINT64 FileStart);
+	void FileInfo(UINT64 FileStart);
+	NTFS(PhysicalDrive* physicalDrive, LBA entry);
 	BOOL IsNTFS();
 };

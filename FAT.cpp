@@ -1,8 +1,7 @@
 #include "FAT.h"
 
-FAT::FAT(PhysicalDrive* physicalDrive, UINT64 LBA)
+FAT::FAT(PhysicalDrive* physicalDrive, UINT64 LBA) : FileSystem(physicalDrive)
 {
-	this->physicalDrive = physicalDrive;
 	physicalDrive->ReadByLBA(&BootSector, BYTES_PER_SECTOR, LBA);
 	if (!IsFAT())
 		return;
@@ -12,7 +11,7 @@ FAT::FAT(PhysicalDrive* physicalDrive, UINT64 LBA)
 	startTableLBA = LBA + BootSector.Header.ReservedLogicalSectors;
 }
 
-static std::wstring GetStringFromStruct(PENTRY_INFO_FAT s)
+static std::wstring GetStringFromStruct(PENTRY_INFO_FAT eif)
 {
 	const BYTE abc[3][2] =
 	{
@@ -22,7 +21,7 @@ static std::wstring GetStringFromStruct(PENTRY_INFO_FAT s)
 	};
 	std::wstring result;
 	for (BYTE i = 0; i < sizeof(abc) / sizeof(*abc); i++)
-		result += std::wstring(PWCHAR(PBYTE(s) + abc[i][0]), PWCHAR(PBYTE(s) + abc[i][1]));
+		result += std::wstring(PWCHAR(PBYTE(eif) + abc[i][0]), PWCHAR(PBYTE(eif) + abc[i][1]));
 	return result;
 }
 
@@ -60,10 +59,12 @@ std::vector<UINT64> FAT::GetPartsOfFileByStartingCluster(DWORD TableIndex)
 	return RawAddressList;
 }
 
-void FAT::DumpDirectory(DWORD dirStart)
+void FAT::DumpDirectory(UINT64 dirStart)
 {
+	if (dirStart == 0)
+		dirStart = 2;
 	DWORD BytesPerCluster = BootSector.Header.LogicalSectorsPerCluster * BootSector.Header.BytesPerLogicalSector;
-	const auto& Pointers = GetPartsOfFileByStartingCluster(dirStart);
+	const auto& Pointers = GetPartsOfFileByStartingCluster(DWORD(dirStart));
 	UINT64 SizeInBytes = Pointers.size() * BytesPerCluster;
 	DataStore Data = DataStore(SizeInBytes);
 	for (DWORD i = 0; i < Pointers.size(); i++)
@@ -104,21 +105,21 @@ void FAT::DumpDirectory(DWORD dirStart)
 	};
 }
 
-void FAT::CommandHandler()
-{
-	printf("Root %08X\n", 2);
-	std::string command1;
-	LBA command2;
-	while (true)
-	{
-		std::cin >> command1 >> std::hex >> command2;
-		if (!strcmp(command1.c_str(), "cd"))
-		{
-			system("cls");
-			DumpDirectory(command2);
-		}
-	}
-}
+//void FAT::CommandHandler()
+//{
+//	printf("Root %08X\n", 2);
+//	std::string command1;
+//	LBA command2;
+//	while (true)
+//	{
+//		std::cin >> command1 >> std::hex >> command2;
+//		if (!strcmp(command1.c_str(), "cd"))
+//		{
+//			system("cls");
+//			DumpDirectory(DWORD(command2));
+//		}
+//	}
+//}
 
 BOOL FAT::IsFAT()
 {

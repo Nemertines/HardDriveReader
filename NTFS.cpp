@@ -19,9 +19,9 @@ void NTFS::PrintFileInfo(std::unordered_set<MFT_NUMBER>& fileReferences, PNTFS_I
 	);
 }
 
-void NTFS::PrintDirectoryContent(MFT_NUMBER MFTNumber)
+void NTFS::DumpDirectory(UINT64 MFTNumber)
 {
-	UINT64 RawPointer = MFTNumberToRawAddress(MFTNumber);
+	UINT64 RawPointer = MFTNumberToRawAddress(MFT_NUMBER(MFTNumber));
 	FILE_RECORD FileRecord = FILE_RECORD(physicalDrive, RawPointer);
 	std::unordered_set<MFT_NUMBER> fileReferences;
 	if (!FileRecord.IsDirectory())
@@ -76,14 +76,13 @@ BOOL NTFS::IsNTFS()
 	return bootSectorInfo.Header.magic == MAGIC_NTFS;
 }
 
-NTFS::NTFS(PhysicalDrive* physicalDrive, LBA entry) : FileSystem(physicalDrive, entry)
+NTFS::NTFS(PhysicalDrive* physicalDrive, LBA entry) : FileSystem(physicalDrive)
 {
-	this->physicalDrive = physicalDrive;
-	this->LBA_Entry = entry;
-	physicalDrive->ReadSectorByLBA(bootSectorInfo.Raw, this->LBA_Entry);
+	LBA_Entry = entry;
+	physicalDrive->ReadSectorByLBA(bootSectorInfo.Raw, LBA_Entry);
 	if (!IsNTFS())
 		return;
-	MFT_Pointer = entry + bootSectorInfo.Header.MFT_clusterNumber * bootSectorInfo.Header.sectorsPerCluster;
+	MFT_Pointer = LBA_Entry + bootSectorInfo.Header.MFT_clusterNumber * bootSectorInfo.Header.sectorsPerCluster;
 	physicalDrive->ReadByLBA(&MFT_FileRecord, sizeof(MFT_FileRecord), MFT_Pointer);
 }
 
@@ -203,13 +202,14 @@ void NTFS::AttributeHandler2(PNTFS_ATTRIBUTE attributeHeader)
 
 UINT64 NTFS::MFTNumberToRawAddress(MFT_NUMBER MFTNumber)
 {
-	const auto MFTDataRunList = MFT_FileRecord.GetAttributeRunList(ATTRIBUTE_TYPE::DATA);
+	const auto MFTDataRunList = MFT_FileRecord.GetAttributeRunList(ATTRIBUTE_TYPE::DATA); //need update mft file record everytime
 	for (DWORD i = 0; i < MFTDataRunList.size(); i++)
 	{
 		//first это смещение в кластерах от LBA_NTFSEntry
 		//second это размер данных в кластерах
 		UINT64 SectorsInCurrentRunData = MFTDataRunList[i].second * bootSectorInfo.Header.sectorsPerCluster;
-		MFT_NUMBER limit = SectorsInCurrentRunData / 2;
+		SectorsInCurrentRunData /= 2;
+		MFT_NUMBER limit = MFT_NUMBER(SectorsInCurrentRunData);
 		//RangeOfFileRecords 0 - limit, limit - nextLimit, 
 		if (MFTNumber < limit)
 		{
@@ -221,9 +221,9 @@ UINT64 NTFS::MFTNumberToRawAddress(MFT_NUMBER MFTNumber)
 	return 0;
 }
 
-void NTFS::ParseFile(MFT_NUMBER MFTNumber)
+void NTFS::FileInfo(UINT64 MFTNumber)
 {
-	UINT64 RawPointer = MFTNumberToRawAddress(MFTNumber);
+	UINT64 RawPointer = MFTNumberToRawAddress(MFT_NUMBER(MFTNumber));
 	FILE_RECORD FileRecord = FILE_RECORD(physicalDrive, RawPointer);
 
 	printf("MFTNumber: %08X, RawPointer: %08X%08X\n", MFTNumber, INSERT_QWORD(RawPointer));
@@ -248,19 +248,19 @@ static std::string FileTimeToString(PFILETIME time)
 	return std::string(buffer);
 }
 
-BOOL NTFS::ExtractFile(MFT_NUMBER MFTNumber)
+void NTFS::ExtractFile(UINT64 MFTNumber)
 {
-	UINT64 RawPointer = MFTNumberToRawAddress(MFTNumber);
+	UINT64 RawPointer = MFTNumberToRawAddress(MFT_NUMBER(MFTNumber));
 	FILE_RECORD FileRecord = FILE_RECORD(physicalDrive, RawPointer);
 	if (FileRecord.IsDirectory())
-		return false;
+		return;
 	std::wstring FileName = FileRecord.GetFileName();
 	HANDLE hFile = CreateFileW(FileName.c_str(),
 		GENERIC_WRITE,
 		FILE_SHARE_READ|FILE_SHARE_WRITE,
 		NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE)
-		return false;
+		return;
 
 	DWORD NumberOfBytesToWrite;
 	PNTFS_ATTRIBUTE AttributeData = FileRecord.GetOneAttribute(ATTRIBUTE_TYPE::DATA);
@@ -269,7 +269,7 @@ BOOL NTFS::ExtractFile(MFT_NUMBER MFTNumber)
 		void* DataBody = AttributeData->AttributeBody();
 		WriteFile(hFile, DataBody, AttributeData->Header.ResidentHeader.bodySize, &NumberOfBytesToWrite, NULL);
 		CloseHandle(hFile);
-		return true;
+		return;
 	}
 
 	UINT64 RemainingFileSize = AttributeData->Header.NonResidentHeader.realSize;
@@ -299,5 +299,5 @@ BOOL NTFS::ExtractFile(MFT_NUMBER MFTNumber)
 			break;
 	}
 	CloseHandle(hFile);
-	return true;
+	return;
 }

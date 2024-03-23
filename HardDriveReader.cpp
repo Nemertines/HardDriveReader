@@ -16,35 +16,37 @@ static void DumpEntries(PhysicalDrive* physicalDrive)
 			PLARGE_INTEGER(&mbr.entries_LBA[i])->HighPart,
 			PLARGE_INTEGER(&mbr.entries_LBA[i])->LowPart
 		);
+	printf("Is not GPT\n");
+	printf("LBA enter:\n");
 }
 
-void NTFSCommandHandler(NTFS& ntfs)
+void CommandHandler(FileSystem* fs)
 {
-	ntfs.DumpDirectory(ntfs.MFT_FileRecord.GetParentDirectory());
-	MFT_NUMBER MFT_FileNumber = 0;
+	fs->DumpRootDirectory();
+	UINT64 v = 0;
 	std::string command;
 	while (true)
 	{
-		printf("\nEnter command and MFT_FileNumber\n");
+		printf("\nEnter command and MFT_FileNumber or FAT_TableIndex\n");
 		printf("o - open/c - copy/i - info\n");
-		std::cin >> std::hex >> command >> MFT_FileNumber;
+		std::cin >> std::hex >> command >> v;
 		system("cls");
-		
+
 		switch (command[0])
 		{
 		case 'o':
 		{
-			ntfs.DumpDirectory(MFT_FileNumber);
+			fs->DumpDirectory(v);
 			break;
 		}
-		case 'c':
+		case 'e':
 		{
-			ntfs.ExtractFile(MFT_FileNumber);
+			fs->ExtractFile(v);
 			break;
 		}
 		case 'i':
 		{
-			ntfs.ParseFile(MFT_FileNumber);
+			fs->FileInfo(v);
 			break;
 		}
 		case 'q':
@@ -60,6 +62,7 @@ void NTFSCommandHandler(NTFS& ntfs)
 
 int main()
 {
+	setlocale(LC_ALL, "RU");
 	std::string driveName = PhysicalDrive::ChoosingHardDriveNumber();
 	PhysicalDrive physicalDrive(driveName.c_str());
 	//maybe this is a bad solution, but I left it in order to minimize dynamic memory allocation
@@ -70,16 +73,15 @@ int main()
 	}
 
 	DumpEntries(&physicalDrive);
-
 	LBA selectedLBA = 0;
 	std::cin >> std::hex >> selectedLBA;
 	system("cls");
 	NTFS ntfs(&physicalDrive, selectedLBA);
 	if (ntfs.IsNTFS())
-		NTFSCommandHandler(ntfs);
-	
+		CommandHandler(&ntfs);
+
 	FAT fat = FAT(&physicalDrive, selectedLBA);
 	if (fat.IsFAT())
-		fat.CommandHandler();
+		CommandHandler(&fat);
 	return 0;
 }
