@@ -3,7 +3,7 @@
 #include <Windows.h>
 #include <string>
 #include <map>
-#include "DefinedStructs.hpp"
+#include "Structs.h"
 #include "PhysicalDrive.h"
 #include "FileSystemAbstract.h"
 

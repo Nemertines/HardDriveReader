@@ -4,9 +4,8 @@ typedef unsigned long long LBA;
 typedef unsigned long long CLUSTER;
 typedef unsigned long long COUNT;
 typedef unsigned long long SECTOR;
-
+const DWORD BYTES_PER_SECTOR = 0x200;
 #define INSERT_QWORD(x) DWORD(x>>32),DWORD(x)
-#define BYTES_PER_SECTOR 0x200
 
 #pragma pack(push, 1)
 typedef struct GPT_HEADER

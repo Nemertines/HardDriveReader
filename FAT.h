@@ -1,6 +1,6 @@
 #pragma once
 #include "PhysicalDrive.h"
-#include "DefinedStructs.hpp"
+#include "Structs.h"
 #include <Windows.h>
 #include <string>
 #include <iostream>

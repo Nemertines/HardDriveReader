@@ -6,8 +6,7 @@
 #include <map>
 #include <vector>
 
-#include "DefinedStructs.hpp"
-#include "UEFI.hpp"
-#include "MBR.hpp"
+#include "Structs.h"
+#include "GPT_MBR.h"
 #include "NTFS.h"
 #include "FAT.h"

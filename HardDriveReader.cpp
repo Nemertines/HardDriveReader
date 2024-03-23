@@ -1,4 +1,4 @@
-﻿#include "ConsoleApplication1.hpp"
+﻿#include "HardDriveReader.h"
 
 static void DumpEntries(PhysicalDrive* physicalDrive)
 {
@@ -60,9 +60,15 @@ void NTFSCommandHandler(NTFS& ntfs)
 
 int main()
 {
-	setlocale(LC_ALL, "RU");
 	std::string driveName = PhysicalDrive::ChoosingHardDriveNumber();
 	PhysicalDrive physicalDrive(driveName.c_str());
+	//maybe this is a bad solution, but I left it in order to minimize dynamic memory allocation
+	if (physicalDrive.BytesPerSector() != BYTES_PER_SECTOR)
+	{
+		MessageBoxA(0,"need rebuild with new BYTES_PER_SECTOR value", 0, 0);
+		return -1;
+	}
+
 	DumpEntries(&physicalDrive);
 
 	LBA selectedLBA = 0;

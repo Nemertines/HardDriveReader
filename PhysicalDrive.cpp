@@ -99,14 +99,7 @@ BOOL PhysicalDrive::InitDiskGeometry()
 
 HANDLE PhysicalDrive::OpenDevice()
 {
-	//winhex
-	//	\\.\PhysicalDrive0
-	//	0x80000000
-	// 3
-	// 0
-	// 3 
-	// 0x80
-	// 0 
+	//like winhex
 	return CreateFileA(
 		DeviceName,
 		GENERIC_READ,

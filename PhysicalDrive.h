@@ -2,7 +2,7 @@
 #include <Windows.h>
 #include <vector>
 #include <string>
-#include "DefinedStructs.hpp"
+#include "Structs.h"
 
 class PhysicalDrive
 {
@@ -13,6 +13,10 @@ public:
 	BOOL ReadByLBA(void* buffer, DWORD size, LBA number);
 	static std::string ChoosingHardDriveNumber();
 	DWORD BytesPerSector();
+	const PDISK_GEOMETRY GetDiskGeometry()
+	{
+		return &DiskGeometry;
+	}
 private:
 	const char* DeviceName = nullptr;
 	DISK_GEOMETRY DiskGeometry{ 0 };
