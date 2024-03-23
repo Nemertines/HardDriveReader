@@ -79,7 +79,7 @@ int main()
 		NTFSCommandHandler(ntfs);
 	
 	FAT fat = FAT(&physicalDrive, selectedLBA);
-	if (!fat.IsFAT())
+	if (fat.IsFAT())
 		fat.CommandHandler();
 	return 0;
 }
