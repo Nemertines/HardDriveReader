@@ -226,7 +226,7 @@ void NTFS::FileInfo(UINT64 MFTNumber)
 	UINT64 RawPointer = MFTNumberToRawAddress(MFT_NUMBER(MFTNumber));
 	FILE_RECORD FileRecord = FILE_RECORD(physicalDrive, RawPointer);
 
-	printf("MFTNumber: %08X, RawPointer: %08X%08X\n", MFTNumber, INSERT_QWORD(RawPointer));
+	printf("MFTNumber: %08X, RawPointer: %08X%08X\n", MFT_NUMBER(MFTNumber), INSERT_QWORD(RawPointer));
 	printf("FileFlag: %04X %s\n\n", FileRecord.Header.flags, (FileRecord.Header.flags & 2) ? "dir" : "file");
 
 	PNTFS_ATTRIBUTE CurrentAttributeHeader = FileRecord.GetFirstAttribute();
@@ -285,12 +285,16 @@ void NTFS::ExtractFile(UINT64 MFTNumber)
 			LBA LBAPointer = LBA_Entry + (startingCluster + j) * bootSectorInfo.Header.sectorsPerCluster;
 			physicalDrive->Read(dataStore.Raw, BytesPerCluster, LBAPointer * bootSectorInfo.Header.bytesPerSector); //read full cluster
 
-			UINT64 SizeForWrite;
+			DWORD SizeForWrite;
 			if (RemainingFileSize > BytesPerCluster)
 				SizeForWrite = BytesPerCluster;
 			else
 				SizeForWrite = RemainingFileSize;
-			WriteFile(hFile, dataStore.Raw, SizeForWrite, &NumberOfBytesToWrite, NULL);
+			if (!WriteFile(hFile, dataStore.Raw, SizeForWrite, &NumberOfBytesToWrite, NULL))
+			{
+				CloseHandle(hFile);
+				return;
+			}
 			RemainingFileSize -= SizeForWrite;
 			if (RemainingFileSize == 0)
 				break;
